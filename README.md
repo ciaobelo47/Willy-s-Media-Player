@@ -1,2 +1,2 @@
-# Willy-s-Media-Player
+# Willy's Media Player
 A simple media player made in PHP

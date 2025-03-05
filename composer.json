@@ -1,7 +1,7 @@
 {
   "name": "harly47/willys-media-player",
   "description": "A simple media player made in PHP",
-  "version": "1.0.0-beta",
+  "version": "1.0.0 - beta",
   "type": "project",
   "authors": [
     {
@@ -11,10 +11,10 @@
       "role": "Main Developer"
     }
   ],
+
   "require": {
     "php": ">=8",
-    "kiwilan/php-audio": ">=4.0.01",
-    "norkunas/youtube-dl-php": ">=2.10.0"
-  },
-  "license": "MIT"
+    "kiwilan/php-audio": "@stable",
+    "norkunas/youtube-dl-php": "@stable"
+  }
 }

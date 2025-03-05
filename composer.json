@@ -1,7 +1,7 @@
 {
   "name": "harly47/willys-media-player",
   "description": "A simple media player made in PHP",
-  "version": "1.0.0 - beta",
+  "version": "1.0.0-beta",
   "type": "project",
   "authors": [
     {

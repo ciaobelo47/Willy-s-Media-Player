@@ -1,0 +1,6 @@
+{
+  "require": {
+    "kiwilan/php-audio": "@stable",
+    "norkunas/youtube-dl-php": "@stable"
+  }
+}

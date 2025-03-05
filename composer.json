@@ -1,5 +1,19 @@
 {
+  "name": "harly47/willys-media-player",
+  "description": "A simple media player made in PHP",
+  "version": "1.0.0 - beta",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Harly",
+      "email": "milodipuorto@gmail.com",
+      "homepage": "https://github.com/ciaobelo47",
+      "role": "Main Developer"
+    }
+  ],
+
   "require": {
+    "php": ">=8",
     "kiwilan/php-audio": "@stable",
     "norkunas/youtube-dl-php": "@stable"
   }

@@ -11,10 +11,10 @@
       "role": "Main Developer"
     }
   ],
-
   "require": {
     "php": ">=8",
-    "kiwilan/php-audio": "@stable",
-    "norkunas/youtube-dl-php": "@stable"
-  }
+    "kiwilan/php-audio": ">=4.0.01",
+    "norkunas/youtube-dl-php": ">=2.10.0"
+  },
+  "license": "MIT"
 }

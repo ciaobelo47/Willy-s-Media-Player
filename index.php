@@ -1,133 +1,33 @@
 <?php
 declare(strict_types=1);
+
+require "Utils.php";
+require "MusicFile.php";
 require "vendor/autoload.php";
 
-use YoutubeDl\YoutubeDl;
-use YoutubeDl\Options;
-use Kiwilan\Audio\Audio;
+try {
+    session_start();
 
-session_start();
-setlocale(LC_ALL, 'ja_JP');
-
-const TMP_DIR = ".tmp";
-global $audio;
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    clearTmp();
-
-    if (isset($_POST['url'])) {
-        playFilefromYT();
-    } elseif ($_FILES['file']['error'] == 0) {
-        uploadFile();
-    } else {
-        echo "Eror";
-        return;
+    if (Utils::getFolderSize("./.tmp") > 1073741824) {
+        Utils::clearTmp();
     }
-}
 
-if (isset($_SESSION["name"])) {
-    $audio = metadataAudio();
-}
-
-function uploadFile(): void
-{
-    $uploadedFile = ".tmp" . DIRECTORY_SEPARATOR . $_FILES['file']['name'];
-
-    if (move_uploaded_file($_FILES['file']['tmp_name'], $uploadedFile)) {
-        $_SESSION["name"] = $uploadedFile;
-        header("Location: index.php");
-    } else {
-        header("Location: 500.php");
-    }
-}
-
-function playFileFromYT(): void
-{
-    $yt = new YoutubeDl();
-
-    $list = $yt
-        ->setBinPath("./bin/yt-dlp")
-        ->download(
-            Options::create()
-                ->ffmpegLocation("./bin/ffmpeg")
-                ->downloadPath(TMP_DIR)
-                ->extractAudio(true)
-                ->audioFormat(Options::AUDIO_FORMAT_MP3)
-                ->audioQuality('0')
-                ->addMetadata(true)
-                ->embedThumbnail(true)
-                ->output('%(title)s.%(ext)s')
-                ->cookies("cookies.txt")
-                ->url($_POST["url"])
-        );
-
-    foreach ($list->getVideos() as $video) {
-        if ($video->getError() !== null) {
-            echo "ALLAAHHHHHHHHHHHHHHHHHHHHH {$video->getError()}";
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if (isset($_POST['url'])) {
+            //yt play
+        } elseif (isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
+            Utils::uploadFile("./.tmp/". $_FILES['file']['name']);
         } else {
-            $_SESSION["name"] = $video->getFilename();
-        }
-    }
-}
-
-function metadataAudio(): Audio|null
-{
-    try {
-        global $audio;
-
-        $audio = Audio::read($_SESSION["name"]);
-        $targetCover = TMP_DIR . DIRECTORY_SEPARATOR . "cover" . '.png';
-
-        if ($audio->hasCover()) {
-            $cover = fopen($targetCover, 'w') or die("can't open file");
-            file_put_contents($targetCover, $audio->getCover()->getContents());
-            fclose($cover);
-        }
-    } catch (\Throwable $th) {
-        throw $th;
-    }
-
-    try {
-        cropCover();
-    } catch (\Throwable $th) {
-        if (!strpos($th->getMessage(), "false given")) {
-            echo $th->getMessage();
+            header("Location: 500.php?err=\"POST not successful\"");
         }
     }
 
-    return $audio;
-}
-
-function getFileName(Audio $audio): string
-{
-    $path = $audio->getPath();
-    return str_replace([TMP_DIR, DIRECTORY_SEPARATOR, ".mp3"], "", $path);
-}
-
-function clearTmp(): void
-{
-    array_map('unlink', glob(".tmp/*.*"));
-}
-
-function cropCover(): void
-{
-    $cover = imagecreatefromstring(file_get_contents(".tmp/cover.png"));
-    if ($cover == false) {
-        global $hasCover;
-        $hasCover = false;
-        return;
+    if (isset($_SESSION['name'])) {
+        $musicFile = new MusicFile($_SESSION['name']);
     }
-    $width = imagesx($cover);
-    if ($width < 720) {
-        copy(".tmp/cover.png", ".tmp/cover_cropped.png");
-        return;
-    }
-
-    $img = imagecrop($cover, ['x' => (($width - 720) / 2), 'y' => 0, 'width' => 720, 'height' => 720]);
-    imagepng($img, ".tmp/cover_cropped.png");
-    imagedestroy($cover);
-
-    $hasCover = true;
+} catch (\Throwable $th) {
+    echo $th->getMessage();
+    exit();
 }
 
 ?>
@@ -142,7 +42,6 @@ function cropCover(): void
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style/style.css">
     <link rel="shortcut icon" href="imgs/favicon.png">
-    <script src="https://jscolor.com/release/2.4.5/jscolor.js"></script>
 </head>
 
 <body>
@@ -163,19 +62,17 @@ function cropCover(): void
         <button type="button" class="nav_item">View</button>
         <button type="button" class="nav_item">Tools</button>
         <button type="button" class="nav_item">Help</button>
-        <input class="jscolor" name="mainColor" id="mainColor">
     </nav>
     <aside class="playlist_sel">
         <button class="playlist_sel_item">Miao</button>
     </aside>
 
     <main>
-        <div class="mainBG <?php if (!isset($_SESSION["name"]))
-            echo "hidden"; if (!$hasCover) echo "hidden" ?>">
-            <img draggable="false" class="back" src=".tmp/cover.png" alt="">
-            <img draggable="false" class="backleft" src=".tmp/cover.png" alt="">
-            <img draggable="false" class="backright" src=".tmp/cover.png" alt="">
-            <img draggable="false" class="front" src=".tmp/cover.png" alt="">
+        <div class="mainBG <?php if (!isset($_SESSION['name']) || !$musicFile->hasCover()) {echo "hidden";} ?>">
+            <img draggable="false" class="back" src="<?php if (isset($musicFile)) {echo $musicFile->getCoverArtPath();} ?>" alt="">
+            <img draggable="false" class="backleft" src="<?php if (isset($musicFile)) {echo $musicFile->getCoverArtPath();} ?>" alt="">
+            <img draggable="false" class="backright" src="<?php if (isset($musicFile)) {echo $musicFile->getCoverArtPath();} ?>" alt="">
+            <img draggable="false" class="front" src="<?php if (isset($musicFile)) {echo $musicFile->getCoverArtPath();} ?>" alt="">
         </div>
         <section class="card_player">
             <div class="card_player_top">
@@ -191,9 +88,9 @@ function cropCover(): void
             </div>
 
             <img style="width: 256px;" src="<?php
-            if (isset($audio)) {
-                if ($audio->hasCover()) {
-                    echo ".tmp/cover_cropped.png";
+            if (isset($musicFile)) {
+                if ($musicFile->hasCover()) {
+                    echo $musicFile->getCoverArtPath();
                 } else {
                     echo "imgs/noFile.png";
                 }
@@ -203,39 +100,27 @@ function cropCover(): void
             ?>" alt="">
             <p class="card_player_item">
                 <?php
-                if (isset($audio)) {
-                    if ($audio->getTitle() != null) {
-                        echo $audio->getTitle();
-                    } else {
-                        echo getFileName($audio);
-                    }
+                if (isset($musicFile)) {
+                    echo $musicFile->title;
                 }
                 ?>
             </p>
             <p class="card_player_item">
                 <?php
-                if (isset($audio)) {
-                    if ($audio->getArtist() != null) {
-                        echo $audio->getArtist();
-                    } else {
-                        echo "";
-                    }
+                if (isset($musicFile)) {
+                    echo $musicFile->getArtist();
                 }
                 ?>
             </p>
 
             <div class="player_timeline">
                 <span id="currentTime">00:00</span>
-                <input type="range" min="0" max="<?php if (isset($audio)) {
-                    echo $audio->getDuration();
-                } ?>" value="0" id="timeline">
-                <span><?php if (isset($audio)) {
-                    echo gmdate("i:s", intval($audio->getDuration()));
-                } ?></span>
+                <input type="range" min="0" max="<?php if (isset($musicFile)) { echo $musicFile->getDuration(); } ?>" value="0" id="timeline">
+                <span><?php if (isset($musicFile)) { echo $musicFile->getReadbleDuration();} ?></span>
             </div>
 
             <div class="player_timeline">
-                <audio src="<?php echo $_SESSION["name"]; ?>" id="audioplayer"></audio>
+                <audio src="<?php if (isset($musicFile)) { echo $musicFile->getMusicPath(); } ?>" id="audioplayer"></audio>
                 <button id="prevBNT">
                     <img src="imgs/skip_previous.svg" alt="" srcset="">
                 </button>
@@ -275,7 +160,7 @@ function cropCover(): void
         }
     </script>
     <script src="scripts/audioControl.js"></script>
-    <script src="scripts/colorControl.js"></script>
+    <!--<script src="scripts/colorControl.js"></script>-->
     <script src="scripts/openMusic.js"></script>
 
     <script>
@@ -285,5 +170,4 @@ function cropCover(): void
         }
     </script>
 </body>
-
 </html>
